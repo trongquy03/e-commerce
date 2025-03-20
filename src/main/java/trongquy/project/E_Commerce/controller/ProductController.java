@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,7 +30,6 @@ public class ProductController {
     @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createProduct(
             @Valid @ModelAttribute ProductDTO productDTO,
-           // @RequestPart("file") MultipartFile file,
             BindingResult result
             ){
                 try {
@@ -40,9 +40,13 @@ public class ProductController {
                                 .toList();
                         return ResponseEntity.badRequest().body(errorMessages);
                     }
-                    MultipartFile file = productDTO.getFile();
-                    if (!file.isEmpty()) {
+                    List<MultipartFile> files = productDTO.getFiles();
+                    files = files == null ? new ArrayList<MultipartFile>() : files;
+                    for (MultipartFile file : files) {
                         // check size file
+                        if (file.getSize() == 0) {
+                            continue;
+                        }
                         if (file.getSize() > 10 * 1024 * 1024) { // 10mb
                             return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                                     .body("File is too large > 10mb");
@@ -55,6 +59,7 @@ public class ProductController {
                         // save file and update thumbnail dto
                         String fileName = storeFile(file);
                     }
+
 
                     return ResponseEntity.ok().body(productDTO);
                 }catch (Exception e) {
